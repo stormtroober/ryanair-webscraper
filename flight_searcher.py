@@ -11,26 +11,29 @@ import subprocess
 from FlightURLBuilder import FlightURLBuilder
 
 class FlightSearcher:
-    def __init__(self):
+    def __init__(self, vpn):
         self.driver = webdriver.Chrome()
         self.driver.delete_all_cookies()
+        self.vpn = vpn
 
     def disconnect_vpn(self):
-        bash_script = './nordvpn_disconnect.sh'  # Replace with the actual path
-        command = f"{bash_script}"
-        result = subprocess.run(command, shell=True)
+        if self.vpn:
+            bash_script = './nordvpn_disconnect.sh'  # Replace with the actual path
+            command = f"{bash_script}"
+            result = subprocess.run(command, shell=True)
 
     def connect_vpn(self, vpn_server):
-        bash_script = './nordvpn_connect.sh'  # Replace with the actual path
-        command = f"{bash_script} {vpn_server}"
-        result = subprocess.run(command, shell=True)
+        if self.vpn:
+            bash_script = './nordvpn_connect.sh'  # Replace with the actual path
+            command = f"{bash_script} {vpn_server}"
+            result = subprocess.run(command, shell=True)
 
-        if result.returncode == 0:
-            print("Connected to NordVPN successfully.")
-            return True
-        else:
-            print("Failed to connect to NordVPN.")
-            return False
+            if result.returncode == 0:
+                print("Connected to NordVPN successfully.")
+                return True
+            else:
+                print("Failed to connect to NordVPN.")
+                return False
 
     def search_flights(self, origins, destinations, dates):
         prices = {}
@@ -106,14 +109,8 @@ def search_and_print_flights(flight_searcher, origins, destinations, dates):
     print(flight_prices)
 
 if __name__ == "__main__":
-    flight_searcher = FlightSearcher()
-
-    vpn_connection = False
-    if vpn_connection:
-        if not flight_searcher.connect_vpn('Germany'):
-            print("Exiting due to VPN connection failure.")
-            flight_searcher.close()
-            exit()
+    flight_searcher = FlightSearcher(vpn=True)
+    flight_searcher.connect_vpn("Germany")
 
     dates = ['2024-01-08', '2024-01-13', '2024-01-15', '2024-01-20', '2024-01-22', '2024-01-27', '2024-01-29']
 
