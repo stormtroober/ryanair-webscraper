@@ -108,7 +108,7 @@ def search_and_print_flights(flight_searcher, origins, destinations, dates):
 if __name__ == "__main__":
     flight_searcher = FlightSearcher()
 
-    vpn_connection = True
+    vpn_connection = False
     if vpn_connection:
         if not flight_searcher.connect_vpn('Germany'):
             print("Exiting due to VPN connection failure.")
