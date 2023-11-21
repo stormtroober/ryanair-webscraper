@@ -67,6 +67,7 @@ class FlightSearcher:
         self.driver.get(url)
 
         try:
+            #Wait for the cookie button to be clickable
             cookie_button = WebDriverWait(self.driver, 5).until(
                 EC.element_to_be_clickable((By.CLASS_NAME, 'cookie-popup-with-overlay__button'))
             )
@@ -75,6 +76,7 @@ class FlightSearcher:
             print("Cookie button not found or not clickable.")
 
         try:
+            #Wait for the card of the price to be visible
             WebDriverWait(self.driver, 5).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "flight-card-new"))
             )
@@ -119,6 +121,7 @@ class FlightSearcher:
 
     def __search_and_save_flights(self, origins, destinations, dates):
         found = False
+        #If the vpn is on, i connect everytime to a different one from the configs
         if self.vpn:
             self.__connect_vpn(random.choice(vpn_countries))
         flight_prices, flight_key  = self.__search_flights(origins, destinations, dates)
@@ -129,6 +132,7 @@ class FlightSearcher:
             found = True
         if self.saveCsv:
             print("Saving flights data...")
+            #I save the flight in a csv
             with open(flights_csv_path, 'a', newline='') as file:
                 writer = csv.writer(file)
                 for key, value in flight_prices.items():
@@ -142,6 +146,22 @@ class FlightSearcher:
         return found
         
     def search_flights_with_retry(self, origin, destination, dates, max_retries):
+        """
+        Searches for flights based on the provided origins, destinations, and dates.
+
+        This private method represents the core functionality for searching flights.
+        It should be implemented with the actual logic for searching flights using 
+        external APIs or data sources. The method should save the search results and 
+        return a boolean indicating the success or failure of the flight search.
+
+        Parameters:
+        - origins (list): A list of origin locations.
+        - destinations (list): A list of destination locations.
+        - dates (list): A list of dates for the flight search.
+
+        Returns:
+        - bool: True if flights are found, False otherwise.
+        """
         for attempt in range(max_retries):
             found = self.__search_and_save_flights([origin], [destination], dates)
             if found:

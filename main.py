@@ -28,6 +28,6 @@ if __name__ == "__main__":
                 {'Origin': 'KRK', 'Destination': 'BLQ'}]
     
     for flight in flights:
-        flight_searcher.search_flights_with_retry(flight['Origin'], flight['Destination'], dates, max_retries=3)
+        flight_searcher.search_flights_with_retry(flight['Origin'], flight['Destination'], dates, max_retries=5)
 
     flight_searcher.close()
