@@ -4,8 +4,6 @@ from selenium.webdriver.common.keys import Keys
 from datetime import datetime
 import argparse
 from FlightSearcher import FlightSearcher
-    
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Flight Searcher")
@@ -22,12 +20,20 @@ if __name__ == "__main__":
     else:
         dates = ['2024-01-08', '2024-01-13', '2024-01-15', '2024-01-20', '2024-01-22', '2024-01-27', '2024-01-29']
 
+    #dates = ['2023-12-30']
+    
     flights = [{'Origin': 'FRL', 'Destination': 'KTW'}, 
                 {'Origin': 'KTW', 'Destination': 'FRL'},
                 {'Origin': 'BLQ', 'Destination': 'KRK'},
                 {'Origin': 'KRK', 'Destination': 'BLQ'}]
     
+    """
+    flights = [{'Origin': 'BLQ', 'Destination': 'VIE'}, 
+                {'Origin': 'VIE', 'Destination': 'BLQ'}]
+    """
     for flight in flights:
         flight_searcher.search_flights_with_retry(flight['Origin'], flight['Destination'], dates, max_retries=5)
+
+        
 
     flight_searcher.close()

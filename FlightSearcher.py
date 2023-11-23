@@ -137,19 +137,14 @@ class FlightSearcher:
                 writer = csv.writer(file)
                 for key, value in flight_prices.items():
                     if not value == "Flight not found":
-                        origin_destination = key.split(' on ')[0]
-                        flight_date = value['date']
-                        price_currency = f"{value['amount']}{value['currency']}"
-                        today_date = datetime.today().strftime("%Y-%m-%d %H:%M")
-
-                        writer.writerow([origin_destination, flight_date, price_currency, today_date])
+                        writer.writerow([key.split(' on ')[0], value['date'], f"{value['amount']}{value['currency']}", datetime.today().strftime("%Y-%m-%d %H:%M")])
         return found
         
     def search_flights_with_retry(self, origin, destination, dates, max_retries):
         """
         Searches for flights based on the provided origins, destinations, and dates.
 
-        This private method represents the core functionality for searching flights.
+        This method represents the core functionality for searching flights.
         It should be implemented with the actual logic for searching flights using 
         external APIs or data sources. The method should save the search results and 
         return a boolean indicating the success or failure of the flight search.
