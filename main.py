@@ -18,10 +18,12 @@ if __name__ == "__main__":
     if args.debug:
         dates = ['2024-01-13']
     else:
-        dates = ['2025-07-18', '2025-07-19', '2025-07-20', '2025-07-21']
+        dates = ['2025-07-17', '2025-07-18', '2025-07-19', '2025-07-20', '2025-07-21']
 
     
-    flights = [{'Origin': 'AOI', 'Destination': 'KRK'}]
+    flights = [
+         {'Origin': 'AOI', 'Destination': 'KRK'},
+               {'Origin': 'RMI', 'Destination': 'KRK'},]
     
     for flight in flights:
         flight_searcher.search_flights_with_retry(flight['Origin'], flight['Destination'], dates, max_retries=3)
