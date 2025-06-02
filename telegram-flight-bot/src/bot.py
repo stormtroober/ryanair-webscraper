@@ -109,7 +109,7 @@ async def start_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             search_job.schedule_removal()
         
         # Schedule the flight search job
-        search_interval = int(os.getenv("FLIGHT_SEARCH_INTERVAL", 5400))  # 90 minutes default
+        search_interval = int(os.getenv("FLIGHT_SEARCH_INTERVAL", 3600))  # 90 minutes default
         search_job = context.job_queue.run_repeating(
             flight_search_job, 
             interval=search_interval, 
@@ -350,7 +350,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         status_text = (
             f"🟢 Flight search is ACTIVE\n"
             f"Next search: {next_run.strftime('%Y-%m-%d %H:%M:%S') if next_run else 'Unknown'}\n"
-            f"Interval: {int(os.getenv('FLIGHT_SEARCH_INTERVAL', 5400)) // 60} minutes\n"
+            f"Interval: {int(os.getenv('FLIGHT_SEARCH_INTERVAL', 3600)) // 60} minutes\n"
             f"Search cycles completed: {search_counter}\n"
             f"First search done: {'✅' if first_search_done else '❌'}\n"
             f"Flights being tracked: {len(price_history)}\n\n"
