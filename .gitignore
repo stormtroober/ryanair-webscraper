@@ -96,3 +96,8 @@ venv/
 ENV/
 env/
 myenv/
+
+# Configuration files with sensitive data
+config.env
+*.env
+telegram-flight-bot/config.env

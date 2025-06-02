@@ -44,7 +44,7 @@ class FlightSearcher:
                 for date in dates:
                     flight_key = f"{origin}-{destination} on {date}"
                     prices[flight_key] = self.__get_price(origin, destination, date)
-        return prices, flight_key
+        return prices
     
     def __setupWebDriver(self):
         chrome_options = webdriver.ChromeOptions()
@@ -54,7 +54,6 @@ class FlightSearcher:
         chrome_options.add_argument("--disable-offline-load-stale-cache")
         self.driver = webdriver.Chrome(chrome_options)
         self.driver.delete_all_cookies()
-
 
     def __get_price(self, origin, destination, date):
         flightBuilder = FlightURLBuilder()
@@ -116,29 +115,33 @@ class FlightSearcher:
             return None
 
     def close(self):
-        self.driver.quit()
+        if hasattr(self, 'driver'):
+            self.driver.quit()
         self.__disconnect_vpn()
 
     def __search_and_save_flights(self, origins, destinations, dates):
-        found = False
         #If the vpn is on, i connect everytime to a different one from the configs
         if self.vpn:
             self.__connect_vpn(random.choice(vpn_countries))
-        flight_prices, flight_key  = self.__search_flights(origins, destinations, dates)
+        
+        flight_prices = self.__search_flights(origins, destinations, dates)
         print(flight_prices)
-        if 'currency' not in flight_prices[flight_key]:
-            return found
-        else:
-            found = True
-        if self.saveCsv:
+        
+        # Filter out flights not found and save to CSV if needed
+        valid_flights = {}
+        for key, value in flight_prices.items():
+            if value != "Flight not found" and value is not None:
+                valid_flights[key] = value
+                
+        if self.saveCsv and valid_flights:
             print("Saving flights data...")
             #I save the flight in a csv
             with open(flights_csv_path, 'a', newline='') as file:
                 writer = csv.writer(file)
-                for key, value in flight_prices.items():
-                    if not value == "Flight not found":
-                        writer.writerow([key.split(' on ')[0], value['date'], f"{value['amount']}{value['currency']}", datetime.today().strftime("%Y-%m-%d %H:%M")])
-        return found
+                for key, value in valid_flights.items():
+                    writer.writerow([key.split(' on ')[0], value['date'], f"{value['amount']}{value['currency']}", datetime.today().strftime("%Y-%m-%d %H:%M")])
+        
+        return valid_flights
         
     def search_flights_with_retry(self, origin, destination, dates, max_retries):
         """
@@ -147,21 +150,22 @@ class FlightSearcher:
         This method represents the core functionality for searching flights.
         It should be implemented with the actual logic for searching flights using 
         external APIs or data sources. The method should save the search results and 
-        return a boolean indicating the success or failure of the flight search.
+        return the flight data dictionary.
 
         Parameters:
-        - origins (list): A list of origin locations.
-        - destinations (list): A list of destination locations.
+        - origin (str): Origin location.
+        - destination (str): Destination location.
         - dates (list): A list of dates for the flight search.
+        - max_retries (int): Maximum number of retry attempts.
 
         Returns:
-        - bool: True if flights are found, False otherwise.
+        - dict: Dictionary with flight data if flights are found, empty dict otherwise.
         """
         for attempt in range(max_retries):
-            found = self.__search_and_save_flights([origin], [destination], dates)
-            if found:
-                return True
+            flight_data = self.__search_and_save_flights([origin], [destination], dates)
+            if flight_data:  # If we found any valid flights
+                return flight_data
             time.sleep(5)
             print(f"Attempt {attempt + 1} failed. Retrying...")
         print('All Attempts failed.')
-        return False
+        return {}  # Return empty dict instead of False

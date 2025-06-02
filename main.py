@@ -20,7 +20,6 @@ if __name__ == "__main__":
     else:
         dates = ['2025-07-18', '2025-07-19', '2025-07-20', '2025-07-21']
 
-    #dates = ['2023-12-30']
     
     flights = [{'Origin': 'AOI', 'Destination': 'KRK'}]
     
