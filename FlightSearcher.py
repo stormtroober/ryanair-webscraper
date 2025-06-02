@@ -69,7 +69,7 @@ class FlightSearcher:
         try:
             #Wait for the cookie button to be clickable
             cookie_button = WebDriverWait(self.driver, 5).until(
-                EC.element_to_be_clickable((By.CLASS_NAME, 'cookie-popup-with-overlay__button'))
+                EC.element_to_be_clickable((By.CLASS_NAME, 'cookie-popup-with-overlay__button-settings'))
             )
             cookie_button.click()
         except TimeoutException:

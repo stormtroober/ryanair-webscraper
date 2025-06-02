@@ -18,21 +18,14 @@ if __name__ == "__main__":
     if args.debug:
         dates = ['2024-01-13']
     else:
-        dates = ['2024-01-08', '2024-01-13', '2024-01-15', '2024-01-20', '2024-01-22', '2024-01-27', '2024-01-29']
+        dates = ['2025-07-18', '2025-07-19', '2025-07-20', '2025-07-21']
 
     #dates = ['2023-12-30']
     
-    flights = [{'Origin': 'FRL', 'Destination': 'KTW'}, 
-                {'Origin': 'KTW', 'Destination': 'FRL'},
-                {'Origin': 'BLQ', 'Destination': 'KRK'},
-                {'Origin': 'KRK', 'Destination': 'BLQ'}]
+    flights = [{'Origin': 'AOI', 'Destination': 'KRK'}]
     
-    """
-    flights = [{'Origin': 'BLQ', 'Destination': 'VIE'}, 
-                {'Origin': 'VIE', 'Destination': 'BLQ'}]
-    """
     for flight in flights:
-        flight_searcher.search_flights_with_retry(flight['Origin'], flight['Destination'], dates, max_retries=5)
+        flight_searcher.search_flights_with_retry(flight['Origin'], flight['Destination'], dates, max_retries=3)
 
         
 
