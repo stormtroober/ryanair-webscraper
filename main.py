@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     
     flights = [
-         {'Origin': 'AOI', 'Destination': 'KRK'},
+        # {'Origin': 'AOI', 'Destination': 'KRK'},
                {'Origin': 'RMI', 'Destination': 'KRK'},]
     
     for flight in flights:

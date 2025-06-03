@@ -32,6 +32,8 @@ class FlightSearcher:
 
             if result.returncode == 0:
                 print("Connected to NordVPN successfully.")
+                # Wait for a few seconds to ensure the VPN connection is established
+                time.sleep(10)
                 return True
             else:
                 print("Failed to connect to NordVPN.")

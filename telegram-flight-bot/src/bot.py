@@ -102,7 +102,7 @@ async def start_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         first_search_done = False
             
         # Initialize flight searcher without CSV saving
-        flight_searcher = FlightSearcher(vpn=False, saveCsv=False)
+        flight_searcher = FlightSearcher(vpn=True, saveCsv=False)
         
         # Remove existing job if any
         if search_job:
