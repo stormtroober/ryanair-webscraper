@@ -10,10 +10,10 @@ from selenium.webdriver.common.by import By
 from datetime import datetime
 import random
 import time
-from config import flights_csv_path
-from config import bash_script_connect
-from config import bash_script_disconnect
-from config import vpn_countries
+from utils.config import flights_csv_path
+from utils.config import bash_script_connect
+from utils.config import bash_script_disconnect
+from utils.config import vpn_countries
 
 class FlightSearcher:
     def __init__(self, vpn, saveCsv):
