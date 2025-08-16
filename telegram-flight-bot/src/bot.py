@@ -28,10 +28,9 @@ logger.setLevel(logging.INFO)
 
 # Flight configuration - Update these to match your needs
 FLIGHT_CONFIG = {
-    'dates': ['2025-07-17', '2025-07-18', '2025-07-19', '2025-07-20', '2025-07-21'],
+    'dates': ['2025-09-14'],
     'flights': [
         {'Origin': 'AOI', 'Destination': 'KRK'},
-        {'Origin': 'RMI', 'Destination': 'KRK'},
     ]
 }
 
