@@ -2,6 +2,7 @@ import os
 import asyncio
 import logging
 from datetime import datetime, timedelta
+from telegram import InputFile
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from dotenv import load_dotenv
@@ -31,17 +32,26 @@ logger.setLevel(logging.INFO)
 
 # Flight configuration - Update these to match your needs
 FLIGHT_CONFIG = {
-    'dates': ['2025-09-14'],
+    'dates': ['2025-08-22', '2025-08-23', '2025-08-24', '2025-08-25', '2025-08-29',
+              '2025-08-30', '2025-08-31', '2025-09-01', '2025-09-05', '2025-09-06', '2025-09-07'],
     'flights': [
         {'Origin': 'AOI', 'Destination': 'KRK'},
     ]
 }
+# FLIGHT_CONFIG = {
+#     'dates': ['2025-08-22'],
+#     'flights': [
+#         {'Origin': 'BLQ', 'Destination': 'KRK'},
+#     ]
+# }
 
 # Global variables
 flight_searcher = None
 search_job = None
 price_tracker = PriceTracker()
 formatter = MessageFormatter(FLIGHT_CONFIG)
+# Initialize flight searcher without CSV saving
+flight_searcher = FlightSearcher(vpn=True, save=True)
 search_counter = 0
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -65,15 +75,14 @@ async def start_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         price_tracker.reset()
         search_counter = 0
 
-        # Initialize flight searcher without CSV saving
-        flight_searcher = FlightSearcher(vpn=True, save=False)
+        
 
         # Remove existing job if any
         if search_job:
             search_job.schedule_removal()
 
         # Schedule the flight search job
-        search_interval = int(os.getenv("FLIGHT_SEARCH_INTERVAL", 5400))  # 90 minutes default
+        search_interval = int(os.getenv("FLIGHT_SEARCH_SAVE_INTERVAL", 21600))  # 6 hours default
         search_job = context.job_queue.run_repeating(
             flight_search_job,
             interval=search_interval,
@@ -138,36 +147,26 @@ async def flight_search_job(context: ContextTypes.DEFAULT_TYPE) -> None:
                 data['destination'] = flight['Destination']
             all_flight_data.update(flight_data)
 
-        if all_flight_data and hasattr(context, 'job') and context.job:
-            chat_id = context.job.chat_id
-
-            price_drops, new_flights = price_tracker.check_price_changes(all_flight_data)
-
-            should_send_update = False
-            message = ""
-
-            if not price_tracker.first_search_done:
-                should_send_update = True
-                message = formatter.format_initial_results(all_flight_data)
-                price_tracker.first_search_done = True
-
-            elif price_drops:
-                should_send_update = True
-                message = formatter.format_price_drop(price_drops)
-
-            if should_send_update:
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text=message,
-                    parse_mode='Markdown'
-                )
-
-        elif hasattr(context, 'job') and context.job:
+        # Send a confirmation message every 2 cycles
+        if hasattr(context, 'job') and context.job and search_counter % 2 == 0:
             chat_id = context.job.chat_id
             await context.bot.send_message(
                 chat_id=chat_id,
-                text=formatter.format_no_flights(flights)
+                text=f"✅ Il bot sta funzionando correttamente! (Ciclo {search_counter})",
+                parse_mode='Markdown'
             )
+
+        # Send the JSON file every 4 cycles
+        if hasattr(context, 'job') and context.job and search_counter % 4 == 0:
+            chat_id = context.job.chat_id
+            saver = get_flight_saver()
+            json_file = saver.export_json()
+            with open(json_file, "rb") as f:
+                await context.bot.send_document(
+                    chat_id=chat_id,
+                    document=InputFile(f, filename=json_file),
+                    caption=f"📄 Export voli (Ciclo {search_counter})"
+                )
 
         logger.info(f"Flight search completed successfully (Cycle {search_counter})")
 
@@ -180,19 +179,36 @@ async def flight_search_job(context: ContextTypes.DEFAULT_TYPE) -> None:
                 text=formatter.format_error(e, search_counter, FLIGHT_CONFIG)
             )
 
-async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global search_job, flight_searcher, search_counter, price_tracker
+async def db_summary(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    saver = get_flight_saver()
+    summary = saver.get_summary()
+    await update.message.reply_text(summary)
+    # Esporta e invia il file JSON
+    json_file = saver.export_json()
+    with open(json_file, "rb") as f:
+        await update.message.reply_document(document=InputFile(f, filename=json_file))
 
-    status_text = formatter.format_status(
-        search_job, flight_searcher, search_counter, price_tracker, FLIGHT_CONFIG
-    )
-    await update.message.reply_text(status_text, parse_mode='Markdown')
+def get_flight_saver():
+    global flight_searcher
+    if flight_searcher is not None:
+        return flight_searcher.get_saver()
+
+import traceback
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.error(msg="Exception while handling an update:", exc_info=context.error)
+    # Invia un messaggio all'utente se possibile
+    if update and hasattr(update, "message") and update.message:
+        await update.message.reply_text("❌ Si è verificato un errore interno. Riprova più tardi.")
+    # Logga lo stack trace completo
+    tb = "".join(traceback.format_exception(None, context.error, context.error.__traceback__))
+    logger.error(tb)
 
 def main() -> None:
     """Start the bot."""
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    token = os.getenv("TELEGRAM_NEW_BOT_TOKEN")
     if not token:
-        raise ValueError("TELEGRAM_BOT_TOKEN not found in environment variables")
+        raise ValueError("TELEGRAM_NEW_BOT_TOKEN not found in environment variables")
     
     # Create the Application with job queue enabled
     application = Application.builder().token(token).build()
@@ -201,7 +217,10 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("start_search", start_search))
     application.add_handler(CommandHandler("stop_search", stop_search))
-    application.add_handler(CommandHandler("status", status))
+    #application.add_handler(CommandHandler("status", status))
+    application.add_handler(CommandHandler("db_summary", db_summary))
+
+    application.add_error_handler(error_handler)
 
     # Run the bot until the user presses Ctrl-C
     print("Bot started. Press Ctrl+C to stop.")

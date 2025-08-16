@@ -10,15 +10,17 @@ from selenium.webdriver.common.by import By
 from datetime import datetime
 import random
 import time
+from FlightSaver import FlightSaver
 from utils.config import flights_csv_path
 from utils.config import bash_script_connect
 from utils.config import bash_script_disconnect
 from utils.config import vpn_countries
 
 class FlightSearcher:
-    def __init__(self, vpn, saveCsv):
+    def __init__(self, vpn, save):
         self.vpn = vpn
-        self.saveCsv = saveCsv
+        self.save = save
+        self.saver = FlightSaver()
 
     def __disconnect_vpn(self):
         if self.vpn:
@@ -38,6 +40,9 @@ class FlightSearcher:
             else:
                 print("Failed to connect to NordVPN.")
                 return False
+            
+    def get_saver(self):
+        return self.saver        
 
     def __search_flights(self, origins, destinations, dates):
         prices = {}
@@ -134,15 +139,12 @@ class FlightSearcher:
         for key, value in flight_prices.items():
             if value != "Flight not found" and value is not None:
                 valid_flights[key] = value
-                
-        if self.saveCsv and valid_flights:
+
+        if self.save and valid_flights:
             print("Saving flights data...")
-            #I save the flight in a csv
-            with open(flights_csv_path, 'a', newline='') as file:
-                writer = csv.writer(file)
-                for key, value in valid_flights.items():
-                    writer.writerow([key.split(' on ')[0], value['date'], f"{value['amount']}{value['currency']}", datetime.today().strftime("%Y-%m-%d %H:%M")])
-        
+            print(valid_flights)
+            self.saver.save(valid_flights)
+
         return valid_flights
         
     def search_flights_with_retry(self, origin, destination, dates, max_retries):
