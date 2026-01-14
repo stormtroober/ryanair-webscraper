@@ -1,15 +1,15 @@
-# ✈️ Ryanair Flight Tracker & Telegram Bot
+# Ryanair Flight Tracker & Telegram Bot
 
 A powerful and automated tool designed to track Ryanair flight prices in real-time. This project features a robust Telegram bot that monitors specific routes and dates, alerting you instantly when prices drop.
 
-## ✨ Key Features
+## Key Features
 
-- **🔄 Automated Scraping**: Runs scheduled checks every 90 minutes (configurable) to keep data fresh.
-- **🔔 Instant Notifications**: Receives Telegram alerts immediately when a price drop is detected.
-- **🛡️ VPN Integration**: Built-in support for VPN toggling to ensure reliable access and data accuracy.
-- **📊 Status Reporting**: Check the current monitoring status and active searches via simple commands.
+- **Automated Scraping**: Runs scheduled checks every 90 minutes (configurable) to keep data fresh.
+- **Instant Notifications**: Receives Telegram alerts immediately when a price drop is detected.
+- **VPN Integration**: Built-in support for VPN toggling to ensure reliable access and data accuracy.
+- **Status Reporting**: Check the current monitoring status and active searches via simple commands.
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python 3.8+
@@ -33,7 +33,7 @@ A powerful and automated tool designed to track Ryanair flight prices in real-ti
 3.  **Set Flight Preferences**
     *Currently, flight routes and dates are configured in `src/bot.py`. Update the `FLIGHT_CONFIG` dictionary with your desired trips.*
 
-## 🤖 Usage
+## Usage
 
 Start the bot:
 ```bash
@@ -48,5 +48,5 @@ python telegram-flight-bot/src/bot.py
 | `/stop_search` | Stop the monitoring process. |
 | `/status` | View current tracking status, active jobs, and cycle count. |
 
-## ⚠️ Disclaimer
+## Disclaimer
 This tool is for educational purposes only. Use responsibly and adhere to the website's terms of service.
