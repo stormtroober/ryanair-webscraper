@@ -55,11 +55,18 @@ class FlightSearcher:
     
     def __setupWebDriver(self):
         chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument("--headless") 
+        chrome_options.add_argument("--headless=new")  # Use new headless mode
+        chrome_options.add_argument("--no-sandbox")  # Required for running as root/in containers
+        chrome_options.add_argument("--disable-dev-shm-usage")  # Overcome limited /dev/shm size
+        chrome_options.add_argument("--disable-gpu")  # Recommended for headless mode
         chrome_options.add_argument("--disable-cache")
         chrome_options.add_argument("--disable-application-cache")
         chrome_options.add_argument("--disable-offline-load-stale-cache")
-        self.driver = webdriver.Chrome(chrome_options)
+        chrome_options.add_argument("--disable-extensions")
+        chrome_options.add_argument("--disable-software-rasterizer")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("--remote-debugging-port=9222")
+        self.driver = webdriver.Chrome(options=chrome_options)
         self.driver.delete_all_cookies()
 
     def __get_price(self, origin, destination, date):

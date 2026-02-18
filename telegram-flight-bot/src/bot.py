@@ -31,9 +31,9 @@ logger.setLevel(logging.INFO)
 
 # Flight configuration - Update these to match your needs
 FLIGHT_CONFIG = {
-    'dates': ['2025-09-14'],
+    'dates': ['2026-03-12'],
     'flights': [
-        {'Origin': 'AOI', 'Destination': 'KRK'},
+        {'Origin': 'KRK', 'Destination': 'BLQ'},
     ]
 }
 
@@ -66,7 +66,8 @@ async def start_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         search_counter = 0
 
         # Initialize flight searcher without CSV saving
-        flight_searcher = FlightSearcher(vpn=True, save=False)
+        use_vpn = os.getenv("USE_VPN", "True").lower() == "true"
+        flight_searcher = FlightSearcher(vpn=use_vpn, save=False)
 
         # Remove existing job if any
         if search_job:
