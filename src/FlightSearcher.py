@@ -10,17 +10,13 @@ from selenium.webdriver.common.by import By
 from datetime import datetime
 import random
 import time
-from FlightSaver import FlightSaver
-from utils.config import flights_csv_path
 from utils.config import bash_script_connect
 from utils.config import bash_script_disconnect
 from utils.config import vpn_countries
 
 class FlightSearcher:
-    def __init__(self, vpn, save):
+    def __init__(self, vpn):
         self.vpn = vpn
-        self.save = save
-        self.saver = FlightSaver()
 
     def __disconnect_vpn(self):
         if self.vpn:
@@ -41,8 +37,7 @@ class FlightSearcher:
                 print("Failed to connect to NordVPN.")
                 return False
             
-    def get_saver(self):
-        return self.saver        
+
 
     def __search_flights(self, origins, destinations, dates):
         prices = {}
@@ -133,7 +128,7 @@ class FlightSearcher:
             self.driver.quit()
         self.__disconnect_vpn()
 
-    def __search_and_save_flights(self, origins, destinations, dates):
+    def __execute_search(self, origins, destinations, dates):
         #If the vpn is on, i connect everytime to a different one from the configs
         if self.vpn:
             self.__connect_vpn(random.choice(vpn_countries))
@@ -146,11 +141,6 @@ class FlightSearcher:
         for key, value in flight_prices.items():
             if value != "Flight not found" and value is not None:
                 valid_flights[key] = value
-
-        if self.save and valid_flights:
-            print("Saving flights data...")
-            print(valid_flights)
-            self.saver.save(valid_flights)
 
         return valid_flights
         
@@ -173,7 +163,7 @@ class FlightSearcher:
         - dict: Dictionary with flight data if flights are found, empty dict otherwise.
         """
         for attempt in range(max_retries):
-            flight_data = self.__search_and_save_flights([origin], [destination], dates)
+            flight_data = self.__execute_search([origin], [destination], dates)
             if flight_data:  # If we found any valid flights
                 return flight_data
             time.sleep(5)

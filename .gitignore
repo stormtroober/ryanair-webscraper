@@ -6,7 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
-/telegram-flight-bot/config.env
+/config.env
 
 # Distribution / packaging
 .Python
@@ -99,4 +99,4 @@ ENV/
 env/
 myenv/
 
-telegram-flight-bot/config.env
+config.env

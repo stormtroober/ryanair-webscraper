@@ -4,16 +4,17 @@ import logging
 from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.error import NetworkError
 from dotenv import load_dotenv
 from PriceTracker import PriceTracker
 from MessageFormatter import MessageFormatter
 
-import sys
-sys.path.append('/home/aless/Documents/ryanair-webscraper')
+from pathlib import Path
 from FlightSearcher import FlightSearcher
 
 # Load environment variables
-load_dotenv('/home/aless/Documents/ryanair-webscraper/telegram-flight-bot/config.env')
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / 'config.env')
 
 # Configure logging - disable httpx and telegram logs
 logging.basicConfig(
@@ -31,7 +32,7 @@ logger.setLevel(logging.INFO)
 
 # Flight configuration - Update these to match your needs
 FLIGHT_CONFIG = {
-    'dates': ['2026-03-12'],
+    'dates': ['2026-04-25'],
     'flights': [
         {'Origin': 'KRK', 'Destination': 'BLQ'},
     ]
@@ -65,9 +66,9 @@ async def start_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         price_tracker.reset()
         search_counter = 0
 
-        # Initialize flight searcher without CSV saving
-        use_vpn = os.getenv("USE_VPN", "True").lower() == "true"
-        flight_searcher = FlightSearcher(vpn=use_vpn, save=False)
+        # Initialize flight searcher
+        use_vpn = os.getenv("USE_VPN", "False").lower() == "true"
+        flight_searcher = FlightSearcher(vpn=use_vpn)
 
         # Remove existing job if any
         if search_job:
@@ -189,6 +190,13 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
     await update.message.reply_text(status_text, parse_mode='Markdown')
 
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log the error without the traceback for NetworkErrors (usually caused by VPN)."""
+    if isinstance(context.error, NetworkError):
+        logger.warning("Error that is coming from nordvpn... (Network connection dropped)")
+    else:
+        logger.error("Exception while handling an update:", exc_info=context.error)
+
 def main() -> None:
     """Start the bot."""
     token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -203,6 +211,9 @@ def main() -> None:
     application.add_handler(CommandHandler("start_search", start_search))
     application.add_handler(CommandHandler("stop_search", stop_search))
     application.add_handler(CommandHandler("status", status))
+    
+    # Add error handler
+    application.add_error_handler(error_handler)
 
     # Run the bot until the user presses Ctrl-C
     print("Bot started. Press Ctrl+C to stop.")

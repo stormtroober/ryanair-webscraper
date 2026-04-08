@@ -19,12 +19,11 @@ A powerful and automated tool designed to track Ryanair flight prices in real-ti
 
 1.  **Install Dependencies**
     ```bash
-    cd telegram-flight-bot
     pip install -r requirements.txt
     ```
 
 2.  **Configuration**
-    Create a `config.env` file in the `telegram-flight-bot` directory:
+    Create a `config.env` file in the root directory:
     ```env
     TELEGRAM_BOT_TOKEN=your_telegram_bot_token
     FLIGHT_SEARCH_INTERVAL=5400
@@ -37,7 +36,7 @@ A powerful and automated tool designed to track Ryanair flight prices in real-ti
 
 Start the bot:
 ```bash
-python telegram-flight-bot/src/bot.py
+python src/bot.py
 ```
 
 ### Telegram Commands
