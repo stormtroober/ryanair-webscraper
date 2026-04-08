@@ -1,19 +1,21 @@
 # Ryanair Flight Tracker & Telegram Bot
 
-A powerful and automated tool designed to track Ryanair flight prices in real-time. This project features a robust Telegram bot that monitors specific routes and dates, alerting you instantly when prices drop.
+A powerful and automated tool designed to track Ryanair flight prices in real-time. This project features a robust Telegram bot that monitors specific routes and dates alerting you instantly when prices drop, and a fully featured Web Dashboard to manage your routes seamlessly.
 
 ## Key Features
 
-- **Automated Scraping**: Runs scheduled checks every 90 minutes (configurable) to keep data fresh.
-- **Instant Notifications**: Receives Telegram alerts immediately when a price drop is detected.
-- **VPN Integration**: Built-in support for VPN toggling to ensure reliable access and data accuracy.
-- **Status Reporting**: Check the current monitoring status and active searches via simple commands.
+- **Automated Web Scraping**: Runs scheduled checks every 90 minutes (configurable) to keep data fresh.
+- **Web Dashboard (Django)**: A polished web interface to add/remove routes, monitor statuses, and view historical price trends using interactive charts.
+- **Airport Autocomplete**: The web dashboard features a smart autocomplete to seamlessly search routes by city names, mapping them securely to their official IATA codes.
+- **Instant Notifications**: The Telegram bot alerts you immediately when a price drop is detected.
+- **VPN Integration**: Built-in support for VPN toggling to ensure reliable access and bypass rate limits.
 
 ## Getting Started
 
 ### Prerequisites
 - Python 3.8+
-- Chrome/Chromium & ChromeDriver (for Selenium)
+- Chrome/Chromium & ChromeDriver (for Selenium automation)
+- A VPN client configured (optional, for the VPN module)
 
 ### Installation
 
@@ -29,14 +31,29 @@ A powerful and automated tool designed to track Ryanair flight prices in real-ti
     FLIGHT_SEARCH_INTERVAL=5400
     ```
 
-3.  **Set Flight Preferences**
-    *Currently, flight routes and dates are configured in `src/bot.py`. Update the `FLIGHT_CONFIG` dictionary with your desired trips.*
-
 ## Usage
 
-Start the bot:
+### 1. Web Dashboard (Django App)
+
+The web dashboard is the easiest way to manage your price alerts and visualize price changes visually.
+
+Start the Django Server:
 ```bash
-python src/bot.py
+cd webapp
+python manage.py makemigrations flights
+python manage.py migrate
+python manage.py runserver
+```
+Visit `http://127.0.0.1:8000/` in your browser. From there you can:
+- **Add routes**: Search from a database of global airports easily by city or code.
+- **View Trends**: View visual line charts representing scraped price histories.
+- **Live Scrape Control**: Trigger a manual background scrape using the web interface with Server-Sent Events (SSE) log streaming.
+
+### 2. Telegram Bot
+
+Run the bot for automated background checking and notifications to your mobile device:
+```bash
+python telegram_bot/bot.py
 ```
 
 ### Telegram Commands

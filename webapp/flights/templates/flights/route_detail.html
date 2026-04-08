@@ -1,0 +1,123 @@
+{% extends 'flights/base.html' %}
+
+{% block title %}{{ route.origin_display }} → {{ route.destination_display }} — Flight Tracker{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{% url 'dashboard' %}" class="btn btn-muted" style="margin-bottom: .75rem;">← Dashboard</a>
+    <div class="page-title" style="font-size: 1.6rem;">{{ route.origin_display }} → {{ route.destination_display }}</div>
+    <div class="page-subtitle">📅 {{ route.date|date:"d M Y" }} · {{ records.count }} records</div>
+  </div>
+  {% if route.is_active %}
+    <span class="badge badge-active" style="font-size: .9rem; padding: .4rem 1rem;">● Active</span>
+  {% else %}
+    <span class="badge badge-inactive" style="font-size: .9rem; padding: .4rem 1rem;">Inactive</span>
+  {% endif %}
+</div>
+
+<!-- Stats row -->
+{% with records_list=records %}
+{% if records_list %}
+{% with latest=records_list.last %}
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+  <div class="card">
+    <div style="color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing:.05em; margin-bottom:.5rem;">Latest Price</div>
+    <div class="price-big">{{ latest.currency }} {{ latest.amount }}</div>
+    <div class="price-meta">{{ latest.scraped_at|date:"d/m H:i" }}</div>
+  </div>
+
+  {% with lowest=records_list|dictsort:"amount"|first %}
+  <div class="card">
+    <div style="color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing:.05em; margin-bottom:.5rem;">Lowest Price</div>
+    <div class="price-big" style="background: linear-gradient(135deg, var(--accent2), #00b4d8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+      {{ lowest.currency }} {{ lowest.amount }}
+    </div>
+    <div class="price-meta">{{ lowest.scraped_at|date:"d/m H:i" }}</div>
+  </div>
+  {% endwith %}
+</div>
+
+<!-- Chart -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div style="font-weight: 600; margin-bottom: 1rem;">📈 Price Trend</div>
+  <canvas id="priceChart" style="max-height: 320px;"></canvas>
+</div>
+
+<script>
+const ctx = document.getElementById('priceChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: {{ chart_labels|safe }},
+    datasets: [{
+      label: 'Price ({{ latest.currency }})',
+      data: {{ chart_prices|safe }},
+      borderColor: '#6c63ff',
+      backgroundColor: 'rgba(108, 99, 255, 0.08)',
+      borderWidth: 2.5,
+      pointBackgroundColor: '#6c63ff',
+      pointRadius: 4,
+      tension: 0.35,
+      fill: true,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#161922',
+        borderColor: '#2a2f3d',
+        borderWidth: 1,
+        titleColor: '#e8eaf0',
+        bodyColor: '#6b7280',
+        padding: 12,
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#6b7280' }, grid: { color: '#1e2230' } },
+      y: { ticks: { color: '#6b7280' }, grid: { color: '#1e2230' } }
+    }
+  }
+});
+</script>
+{% endwith %}
+
+<!-- Records table -->
+<div class="card">
+  <div style="font-weight: 600; margin-bottom: 1rem;">📋 Records History</div>
+  <div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; font-size: .88rem;">
+      <thead>
+        <tr style="color: var(--muted); text-align: left; border-bottom: 1px solid var(--border);">
+          <th style="padding: .6rem .8rem;">Date</th>
+          <th style="padding: .6rem .8rem;">Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records_list reversed %}
+        <tr style="border-bottom: 1px solid var(--border); transition: background .15s;"
+            onmouseover="this.style.background='#1e2230'" onmouseout="this.style.background=''">
+          <td style="padding: .6rem .8rem; color: var(--muted);">{{ r.scraped_at|date:"d/m/Y H:i" }}</td>
+          <td style="padding: .6rem .8rem; font-weight: 600;">{{ r.currency }} {{ r.amount }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<div class="empty">
+  <div class="big">📭</div>
+  <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: .5rem;">No prices recorded yet</div>
+  <div style="font-size: .9rem;">Start the scraper using: <code style="background: var(--surface2); padding: .1rem .4rem; border-radius: 4px;">python manage.py run_scraper --run-now</code></div>
+</div>
+{% endif %}
+{% endwith %}
+{% endblock %}

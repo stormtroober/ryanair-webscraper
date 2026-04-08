@@ -1,0 +1,258 @@
+{% extends 'flights/base.html' %}
+
+{% block title %}Dashboard — Flight Tracker{% endblock %}
+
+{% block extra_head %}
+<style>
+  .status-indicator {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--accent2);
+    font-weight: 500;
+  }
+  .pulse-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+  
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  .autocomplete-items {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 99;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+    display: none;
+  }
+  .autocomplete-items div {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-size: 0.9rem;
+    transition: background 0.15s;
+  }
+  .autocomplete-items div:hover {
+    background-color: var(--highlight);
+    color: #fff;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Dashboard</div>
+    <div class="page-subtitle">Monitor active routes and their prices (updates every 90 minutes)</div>
+  </div>
+  <div class="header-actions">
+    <div id="scrapingStatus" class="status-indicator">
+      <span class="pulse-dot"></span> Scraping in progress...
+    </div>
+    <button id="scrapeBtn" class="btn btn-success" onclick="triggerScrape()">▶ Start Scrape Now</button>
+  </div>
+</div>
+
+<!-- Add route form -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div style="font-weight: 600; margin-bottom: 1rem; font-size: .95rem;">➕ Add Route</div>
+  <form method="post" action="{% url 'route_add' %}" class="inline-form">
+    {% csrf_token %}
+
+    <div class="field" style="position:relative;">
+      <label>From</label>
+      <input type="text" id="originInput" placeholder="Ex: KRK or Krakow" required autocomplete="off">
+      <input type="hidden" name="origin" id="originIata">
+      <div id="originList" class="autocomplete-items"></div>
+    </div>
+    <div class="field" style="position:relative;">
+      <label>To</label>
+      <input type="text" id="destInput" placeholder="Ex: BLQ or Bologna" required autocomplete="off">
+      <input type="hidden" name="destination" id="destIata">
+      <div id="destList" class="autocomplete-items"></div>
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" name="date" required style="width: 160px;">
+    </div>
+    <button type="submit" class="btn btn-primary">Add &amp; Start</button>
+  </form>
+</div>
+
+<!-- Routes grid -->
+{% if route_data %}
+<div class="grid">
+  {% for item in route_data %}
+  <div class="card">
+    <div class="route-header">
+      <span class="route-code" style="font-size: 1.05rem;">{{ item.route.origin_display }} → {{ item.route.destination_display }}</span>
+      {% if item.route.is_active %}
+        <span class="badge badge-active">● Active</span>
+      {% else %}
+        <span class="badge badge-inactive">Inactive</span>
+      {% endif %}
+    </div>
+
+    <div style="color: var(--muted); font-size: .85rem; margin-bottom: 1rem;">
+      📅 {{ item.route.date|date:"d M Y" }}
+    </div>
+
+    {% if item.latest %}
+      <div class="price-big">{{ item.latest.currency }} {{ item.latest.amount }}</div>
+      <div class="price-meta">Last record · {{ item.latest.scraped_at|date:"d/m H:i" }}</div>
+      {% if item.lowest and item.lowest.amount != item.latest.amount %}
+      <div class="price-meta" style="margin-top: .4rem; color: var(--accent2);">
+        📉 All-time low: {{ item.lowest.currency }} {{ item.lowest.amount }}
+      </div>
+      {% endif %}
+      <div class="price-meta" style="margin-top: .4rem;">
+        {{ item.record_count }} record{{ item.record_count|pluralize }}
+      </div>
+    {% else %}
+      <div style="color: var(--muted); font-size: .9rem; padding: .5rem 0;">No price recorded</div>
+    {% endif %}
+
+    <div class="route-actions">
+      <a href="{% url 'route_detail' item.route.pk %}" class="btn btn-muted">📊 Details</a>
+      <form method="post" action="{% url 'route_toggle' item.route.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn {% if item.route.is_active %}btn-muted{% else %}btn-success{% endif %}">
+          {% if item.route.is_active %}⏸ Pause{% else %}▶ Activate{% endif %}
+        </button>
+      </form>
+      <form method="post" action="{% url 'route_delete' item.route.pk %}" style="display:inline;"
+            onsubmit="return confirm('Delete this route?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">🗑</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="empty">
+  <div class="big">✈️</div>
+  <div style="font-weight:600;font-size:1.1rem;margin-bottom:.5rem;">No route configured</div>
+  <div style="font-size:.9rem;">Add a route above.</div>
+</div>
+{% endif %}
+
+<script>
+const statusIndicator = document.getElementById('scrapingStatus');
+const scrapeBtn        = document.getElementById('scrapeBtn');
+let isCurrentlyScraping = ("{{ scraper_running }}" === "True");
+let hasSeenStart = false; // Guard to prevent reload loop
+
+function setScrapingUI(active) {
+  isCurrentlyScraping = active;
+  statusIndicator.style.display = active ? 'flex' : 'none';
+  scrapeBtn.disabled = active;
+  if(active) {
+    scrapeBtn.textContent = '⏳ In progress...';
+  } else {
+    scrapeBtn.textContent = '▶ Start Scrape Now';
+  }
+}
+
+// SSE connection in background
+(function connectSSE() {
+  const es = new EventSource("{% url 'log_stream' %}");
+  es.onmessage = (e) => {
+    if (!e.data) return;
+    
+    // If a start message is received
+    if (e.data.includes('🚀')) {
+      hasSeenStart = true;
+      if (!isCurrentlyScraping) setScrapingUI(true);
+    }
+    
+    // If a completion message is received
+    if (e.data.includes('✔️') || e.data.includes('completed')) {
+      if (isCurrentlyScraping) {
+        setScrapingUI(false);
+        // Single reload after completion to show new prices
+        setTimeout(() => location.reload(), 1200);
+      }
+    }
+  };
+  es.onerror = () => { es.close(); setTimeout(connectSSE, 3000); };
+})();
+
+// Set initial UI state
+setScrapingUI(isCurrentlyScraping);
+
+function triggerScrape() {
+  setScrapingUI(true);
+  fetch("{% url 'scrape_now' %}", {
+    method: 'POST',
+    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.started) setScrapingUI(false);
+  })
+  .catch(() => setScrapingUI(false));
+}
+
+// Autocomplete logic
+const airportsData = {{ airports_json|safe }};
+function initAutocomplete(inputId, hiddenId, listId) {
+  const input = document.getElementById(inputId);
+  const hidden = document.getElementById(hiddenId);
+  const list = document.getElementById(listId);
+
+  input.addEventListener("input", function() {
+    let val = this.value.trim().toLowerCase();
+    list.innerHTML = "";
+    if(!val) { list.style.display = "none"; hidden.value = ""; return; }
+    
+    let regex = new RegExp(val.normalize('NFD').replace(/[\u0300-\u036f]/g, ""), "i");
+    let matches = airportsData.filter(a => regex.test(a.search_text)).slice(0, 8);
+    
+    if(matches.length > 0) {
+      matches.forEach(apt => {
+        let div = document.createElement("div");
+        div.innerHTML = `<strong>${apt.city}</strong> (${apt.iata}) <br><span style="font-size:.8rem;color:var(--muted)">${apt.name}</span>`;
+        div.addEventListener("click", function() {
+          input.value = `${apt.city} (${apt.iata})`;
+          hidden.value = apt.iata;
+          list.style.display = "none";
+        });
+        list.appendChild(div);
+      });
+      list.style.display = "block";
+    } else {
+      list.style.display = "none";
+    }
+    // Fallback: if they just type without clicking, set hidden value to their typed text
+    // The backend resolve_iata will handle mapping if it isn't an IATA code.
+    hidden.value = this.value;
+  });
+
+  document.addEventListener("click", function(e) {
+    if(e.target !== input && e.target !== list && !list.contains(e.target)) {
+      list.style.display = "none";
+    }
+  });
+}
+
+initAutocomplete("originInput", "originIata", "originList");
+initAutocomplete("destInput", "destIata", "destList");
+</script>
+{% endblock %}

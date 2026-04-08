@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Ryanair Flight Tracker{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #161922;
+      --surface2:  #1e2230;
+      --border:    #2a2f3d;
+      --accent:    #6c63ff;
+      --accent2:   #00d4aa;
+      --danger:    #ff4d6d;
+      --warn:      #ffa94d;
+      --text:      #e8eaf0;
+      --muted:     #6b7280;
+      --radius:    14px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ---- NAV ---- */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-brand {
+      font-size: 1.1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .9rem;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ---- LAYOUT ---- */
+    main { max-width: 1120px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* ---- CARDS ---- */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: border-color .2s, transform .2s;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+    /* ---- BUTTONS ---- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .5rem 1.1rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: .85rem;
+      font-weight: 500;
+      font-family: inherit;
+      transition: opacity .15s, transform .1s;
+      text-decoration: none;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: var(--accent);  color: #fff; }
+    .btn-success { background: var(--accent2); color: #0d0f14; }
+    .btn-danger  { background: var(--danger);  color: #fff; }
+    .btn-muted   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn:hover   { opacity: .85; }
+
+    /* ---- BADGE ---- */
+    .badge {
+      display: inline-block;
+      padding: .2rem .65rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .badge-active   { background: rgba(0,212,170,.15); color: var(--accent2); }
+    .badge-inactive { background: rgba(107,114,128,.15); color: var(--muted); }
+
+    /* ---- FORM ---- */
+    form.inline-form {
+      display: flex; flex-wrap: wrap; gap: .75rem;
+      align-items: flex-end;
+    }
+    .field { display: flex; flex-direction: column; gap: .3rem; }
+    label { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    input[type="text"], input[type="date"], input[type="number"] {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: .5rem .8rem;
+      font-size: .9rem;
+      font-family: inherit;
+      transition: border-color .2s;
+      width: 120px;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* ---- GRID ---- */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
+
+    /* ---- ROUTE CARD ---- */
+    .route-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .route-code {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+    .price-big {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent2), #00b4d8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .price-meta { font-size: .8rem; color: var(--muted); margin-top: .2rem; }
+    .route-actions { display: flex; gap: .5rem; margin-top: 1.2rem; flex-wrap: wrap; }
+
+    /* ---- EMPTY STATE ---- */
+    .empty {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--muted);
+    }
+    .empty .big { font-size: 3rem; margin-bottom: 1rem; }
+
+    /* ---- PAGE HEADER ---- */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .page-title { font-size: 1.6rem; font-weight: 700; }
+    .page-subtitle { color: var(--muted); font-size: .9rem; margin-top: .25rem; }
+
+    /* ---- SCROLLBAR ---- */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <nav>
+    <span class="nav-brand">✈️ Flight Tracker</span>
+    <div class="nav-links">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <a href="/admin/" target="_blank">Admin</a>
+      <button id="vpnToggleBtn" onclick="toggleVPN()" class="btn btn-muted"
+              style="font-size:.8rem;padding:.35rem .9rem;cursor:pointer;">
+        VPN: <span id="vpnLabel">OFF</span>
+      </button>
+    </div>
+  </nav>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+<script>
+const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+function updateVPNButton(vpn) {
+  const label = document.getElementById('vpnLabel');
+  const btn   = document.getElementById('vpnToggleBtn');
+  label.textContent = vpn ? 'ON' : 'OFF';
+  btn.style.borderColor = vpn ? 'var(--accent2)' : '';
+  btn.style.color       = vpn ? 'var(--accent2)' : '';
+}
+
+function toggleVPN() {
+  fetch('/api/vpn/', {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrfToken},
+  })
+  .then(r => r.json())
+  .then(d => updateVPNButton(d.vpn));
+}
+
+// Sync VPN state on page load
+fetch('/api/status/')
+  .then(r => r.json())
+  .then(d => updateVPNButton(d.vpn));
+</script>
+</body>
+</html>
