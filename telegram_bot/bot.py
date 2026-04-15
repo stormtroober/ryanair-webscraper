@@ -32,9 +32,9 @@ logger.setLevel(logging.INFO)
 
 # Flight configuration - Update these to match your needs
 FLIGHT_CONFIG = {
-    'dates': ['2026-04-25'],
+    'dates': ['2026-05-01'],
     'flights': [
-        {'Origin': 'KRK', 'Destination': 'BLQ'},
+        {'Origin': 'RMI', 'Destination': 'KRK'},
     ]
 }
 

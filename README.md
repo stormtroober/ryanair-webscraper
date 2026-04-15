@@ -29,7 +29,11 @@ A powerful and automated tool designed to track Ryanair flight prices in real-ti
     ```env
     TELEGRAM_BOT_TOKEN=your_telegram_bot_token
     FLIGHT_SEARCH_INTERVAL=5400
+    SECRET_KEY=your_django_secret_key
+    USE_VPN=false
     ```
+    > `SECRET_KEY` is required for Django. Generate one with:
+    > `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"`
 
 ## Usage
 
@@ -45,9 +49,21 @@ python manage.py migrate
 python manage.py runserver
 ```
 Visit `http://127.0.0.1:8000/` in your browser. From there you can:
-- **Add routes**: Search from a database of global airports easily by city or code.
-- **View Trends**: View visual line charts representing scraped price histories.
-- **Live Scrape Control**: Trigger a manual background scrape using the web interface with Server-Sent Events (SSE) log streaming.
+- **Add routes**: Search from a database of global airports by city name or IATA code — autocomplete resolves city names to codes automatically.
+- **Toggle routes**: Enable/disable individual routes without deleting them.
+- **View trends**: Interactive line charts showing full price history per route.
+- **Live scrape control**: Trigger a manual background scrape; logs stream in real-time via Server-Sent Events (SSE).
+- **VPN toggle**: Enable/disable VPN for the scraper directly from the dashboard.
+
+#### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/status/` | GET | Scraper running state and VPN flag |
+| `/api/prices/<pk>/` | GET | Price history (labels + amounts) for a route |
+| `/scrape-now/` | POST | Trigger an immediate full scrape |
+| `/vpn-toggle/` | POST | Toggle VPN on/off for the scraper |
+| `/log-stream/` | GET (SSE) | Live scraper log stream |
 
 ### 2. Telegram Bot
 
