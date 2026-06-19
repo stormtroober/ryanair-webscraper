@@ -29,13 +29,13 @@ class MessageFormatter:
         dest_name = self.get_airport_display_name(destination)
         return f"{origin} → {destination} ({origin_name} to {dest_name})"
 
-    def get_date_range_display(self):
-        dates = self.flight_config['dates']
+    # NUOVO METODO: Formatta le date per una singola tratta
+    def _format_flight_dates(self, dates):
+        if not dates:
+            return "No dates configured"
         if len(dates) == 1:
             return dates[0]
-        elif len(dates) > 1:
-            return f"{dates[0]} to {dates[-1]}"
-        return "No dates configured"
+        return f"{dates[0]} to {dates[-1]}"
 
     def format_initial_results(self, all_flight_data):
         message = f"🚀 *Initial Flight Search Results - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n\n"
@@ -72,10 +72,14 @@ class MessageFormatter:
         return message
 
     def format_no_flights(self, flights):
-        route_list = ", ".join([f"{flight['Origin']}→{flight['Destination']}" for flight in flights])
+        # Aggiornato per mostrare le date specifiche della rotta
+        route_list = "\n".join([
+            f"• {f['Origin']}→{f['Destination']} (📅 {self._format_flight_dates(f.get('dates', []))})" 
+            for f in flights
+        ])
         return (
             f"⚠️ No flights found at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-            f"Searched routes: {route_list} for dates {self.get_date_range_display()}"
+            f"Searched routes:\n{route_list}"
         )
 
     def group_flights_by_route(self, flight_data):
@@ -92,15 +96,17 @@ class MessageFormatter:
                 }
             routes[route_key]['flights'][flight_key] = flight_info
         return routes
-    
 
     def format_status(self, search_job, flight_searcher, search_counter, price_tracker, FLIGHT_CONFIG):
         if search_job and flight_searcher:
             next_run = getattr(search_job, 'next_t', None)
+            
+            # Aggiornato: Mostra ogni rotta con le SUE date
             route_list = "\n".join([
-                f"• {self.get_route_display_name(flight['Origin'], flight['Destination'])}"
+                f"• {self.get_route_display_name(flight['Origin'], flight['Destination'])}\n  └ 📅 {self._format_flight_dates(flight.get('dates', []))}"
                 for flight in FLIGHT_CONFIG['flights']
             ])
+            
             status_text = (
                 f"🟢 Flight search is ACTIVE\n"
                 f"Next search: {next_run.strftime('%Y-%m-%d %H:%M:%S') if next_run else 'Unknown'}\n"
@@ -108,8 +114,7 @@ class MessageFormatter:
                 f"Search cycles completed: {search_counter}\n"
                 f"First search done: {'✅' if price_tracker.first_search_done else '❌'}\n"
                 f"Flights being tracked: {len(price_tracker.price_history)}\n\n"
-                f"🛫 Configured routes:\n{route_list}\n"
-                f"📅 Dates: {self.get_date_range_display()}"
+                f"🛫 Configured routes:\n{route_list}"
             )
             if price_tracker.price_history:
                 status_text += "\n\n📊 Current minimum prices:\n"
@@ -150,15 +155,17 @@ class MessageFormatter:
             f"Routes: {route_list}"
         )
     
-    def format_search_started(self, search_interval, flights, get_route_display_name, get_date_range_display):
+    # Aggiornato: Ho rimosso le dipendenze inutili dai parametri per renderlo più pulito
+    def format_search_started(self, search_interval, flights):
         route_list = ""
         for flight in flights:
-            route_display = get_route_display_name(flight['Origin'], flight['Destination'])
-            route_list += f"• {route_display}\n"
+            route_display = self.get_route_display_name(flight['Origin'], flight['Destination'])
+            dates_display = self._format_flight_dates(flight.get('dates', []))
+            route_list += f"• {route_display} \n  └ 📅 {dates_display}\n"
+            
         return (
             f'Flight search started! I will search for flights every {search_interval // 60} minutes.\n\n'
             f'🛫 Searching flights:\n{route_list}\n'
-            f'📅 Dates: {get_date_range_display()}\n\n'
             f'📊 Price tracking enabled:\n'
             f'• First search results will always be shown\n'
             f'• You\'ll be notified when prices drop below previous minimums'

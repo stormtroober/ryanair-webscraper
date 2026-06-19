@@ -30,11 +30,19 @@ logging.getLogger('telegram.ext').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Flight configuration - Update these to match your needs
+# Flight configuration - Dates are now bound to specific routes
 FLIGHT_CONFIG = {
-    'dates': ['2026-05-01'],
     'flights': [
-        {'Origin': 'RMI', 'Destination': 'KRK'},
+        {
+            'Origin': 'AOI', 
+            'Destination': 'KRK',
+            'dates': ['2026-07-26', '2026-07-29']
+        },
+        {
+            'Origin': 'RMI', 
+            'Destination': 'KRK',
+            'dates': ['2026-07-29','2026-07-28','2026-07-27', '2026-07-25']
+        },
     ]
 }
 
@@ -86,9 +94,7 @@ async def start_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(
             formatter.format_search_started(
                 search_interval,
-                FLIGHT_CONFIG['flights'],
-                formatter.get_route_display_name,
-                formatter.get_date_range_display
+                FLIGHT_CONFIG['flights']
             )
         )
         logger.info("Flight search scheduler started")
@@ -123,7 +129,6 @@ async def flight_search_job(context: ContextTypes.DEFAULT_TYPE) -> None:
         search_counter += 1
         logger.info(f"Starting flight search... (Cycle {search_counter})")
 
-        dates = FLIGHT_CONFIG['dates']
         flights = FLIGHT_CONFIG['flights']
 
         all_flight_data = {}
@@ -132,7 +137,7 @@ async def flight_search_job(context: ContextTypes.DEFAULT_TYPE) -> None:
             flight_data = flight_searcher.search_flights_with_retry(
                 flight['Origin'],
                 flight['Destination'],
-                dates,
+                flight.get('dates', []),  # Uses the specific dates for this route
                 max_retries=3
             )
             for key, data in flight_data.items():
