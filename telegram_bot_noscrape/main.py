@@ -1,4 +1,5 @@
 import os
+import json # <-- Aggiunta importazione per leggere il file testuale
 import logging
 from datetime import datetime
 from telegram import Update
@@ -10,7 +11,7 @@ from PriceTracker import PriceTracker
 from MessageFormatter import MessageFormatter
 from FlightSearcher import FlightSearcher
 
-# 1. Inizializzo subito il logger di base per poter stampare i messaggi di avvio
+# 1. Inizializzo subito il logger
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -18,11 +19,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logging.getLogger('httpx').setLevel(logging.WARNING)
 
-# 2. Calcolo il path e loggo il risultato
+# 2. Calcolo il path base
 BASE_DIR = Path(__file__).resolve().parent
 env_path = BASE_DIR / '.env'
-
-BASE_DIR = Path(__file__).resolve().parent
+config_path = BASE_DIR / 'flights.json' # <-- Nuovo path per il file di configurazione
 
 logger.info(f"Cerco il file .env in: {env_path}")
 
@@ -30,31 +30,25 @@ if env_path.exists():
     logger.info("✅ File .env trovato con successo!")
 else:
     logger.error("❌ ATTENZIONE: File .env NON trovato in quel percorso!")
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(env_path)
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-logging.getLogger('httpx').setLevel(logging.WARNING)
+# 3. Funzione per caricare la configurazione esterna
+def load_flight_config():
+    if config_path.exists():
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                logger.info("✅ File flights.json caricato con successo!")
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            logger.error(f"❌ Errore di formattazione nel file flights.json: {e}")
+    else:
+        logger.error("❌ ATTENZIONE: File flights.json NON trovato!")
+    
+    # Ritorno un fallback vuoto in caso di errore per evitare crash
+    return {'flights': []}
 
-logger = logging.getLogger(__name__)
-
-# Aggiunte le date di inizio agosto per coprire lo scavallamento del mese
-FLIGHT_CONFIG = {
-    'flights': [
-        {
-            'Origin': 'AOI', 
-            'Destination': 'KRK',
-            'dates': ['2026-07-26', '2026-07-29', '2026-08-01', '2026-08-02']
-        },
-        {
-            'Origin': 'RMI', 
-            'Destination': 'KRK',
-            'dates': ['2026-07-25', '2026-07-27', '2026-07-28', '2026-07-29', '2026-08-01']
-        },
-    ]
-}
+# Caricamento della configurazione
+FLIGHT_CONFIG = load_flight_config()
 
 flight_searcher = None
 search_job = None
